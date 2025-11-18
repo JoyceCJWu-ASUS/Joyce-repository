@@ -1,4 +1,4 @@
-name: protect-issue-author-close
+name: protect-issue-author-close.yml
 
 on:
   issues:
