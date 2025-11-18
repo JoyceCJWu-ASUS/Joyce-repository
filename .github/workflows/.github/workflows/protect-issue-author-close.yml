@@ -1,4 +1,4 @@
-name: Protect Issue Close: Author Only
+name: protect-issue-author-close
 
 on:
   issues:
