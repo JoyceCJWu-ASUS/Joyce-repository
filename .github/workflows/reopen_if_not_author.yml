@@ -1,0 +1,47 @@
+name: Enforce Author-Only Close
+
+on:
+  # 設置在 Issue 被關閉時觸發這個工作流程
+  issues:
+    types: [closed]
+
+jobs:
+  check_and_reopen:
+    runs-on: ubuntu-latest
+    
+    # 使用 if 條件來確保這個 Action 只在 Issue 被關閉時運行
+    if: github.event.issue.state == 'closed'
+
+    steps:
+      - name: 檢查關閉者是否為作者
+        id: check
+        # 檢查關閉 issue 的使用者 (github.actor) 
+        # 是否與 issue 的作者 (github.event.issue.user.login) 相同
+        run: |
+          CLOSER="${{ github.actor }}"
+          AUTHOR="${{ github.event.issue.user.login }}"
+          
+          echo "Issue Author: $AUTHOR"
+          echo "Action Actor (Closer): $CLOSER"
+
+          if [ "$CLOSER" != "$AUTHOR" ]; then
+            echo "::set-output name=should_reopen::true"
+          else
+            echo "::set-output name=should_reopen::false"
+          fi
+
+      - name: 如果不是 Author 關閉，則重新開啟 Issue
+        if: steps.check.outputs.should_reopen == 'true'
+        uses: actions-cool/github-issue-action@v3
+        with:
+          # 使用 GITHUB_TOKEN 來執行操作
+          github-token: ${{ secrets.GITHUB_TOKEN }} 
+          # 重新開啟 Issue
+          command: 'reopen'
+          # 重新開啟後，留下一個評論說明原因
+          body: |
+            ⚠️ **流程限制警告** ⚠️
+
+            根據我們的管理流程，此 Issue 只能由 **Issue Author (@${{ github.event.issue.user.login }})** 關閉。
+            
+            此 Issue 已被自動重新開啟。如果您認為這是錯誤操作，請聯絡儲存庫管理員。
